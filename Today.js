@@ -42,9 +42,8 @@ function SubjectAttendanceCard({ subject, status, onStatusChange, darkMode }) {
   );
 }
 
-export default function Timetable({ subjects, timetable, setTimetable, darkMode, attendance = {}, markAttendance }) 
+export default function Today({ subjects, timetable, darkMode, attendance = {}, markAttendance }) 
  {
-  const [showEditor, setShowEditor] = useState(false);
   const today = new Date();
   const dateStr = today.toISOString().slice(0, 10);
   const todayIdx = today.getDay() === 0 ? 6 : today.getDay() - 1;
@@ -54,8 +53,7 @@ export default function Timetable({ subjects, timetable, setTimetable, darkMode,
 
   const todaySubjects = timetable[todayIdx] || [];
 
-  console.log('Today is:', today.toDateString(), 'Index:', todayIdx);
-  console.log('Timetable for today:', timetable[todayIdx]);
+
 
   return (
     <ScrollView style={[styles.container, darkMode && styles.containerDark]}>

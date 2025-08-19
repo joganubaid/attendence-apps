@@ -60,6 +60,46 @@ export default function Chatbot({ darkMode }) {
     setTimeout(() => setIsTyping(false), 1000);
   };
 
+  const resetToStart = async () => {
+    setIsLoading(true);
+    setMessages([]);
+    setButtons([]);
+    setState({ subject: null, examType: null });
+
+    try {
+      const res = await axios.get(`${API_BASE}/subjects`);
+      const theory = Array.isArray(res.data?.theory) ? res.data.theory : [];
+      const labs = Array.isArray(res.data?.labs) ? res.data.labs : [];
+
+     setButtons([
+  { 
+    label: "📚 Theory Subjects", 
+    action: () => showSubjects(theory, "theory"),
+    primary: true,
+    icon: "book-outline"
+  },
+  { 
+    label: "🔬 Lab Subjects", 
+    action: () => showSubjects(labs, "lab"),
+    primary: true,
+    icon: "flask-outline"
+  },
+  { 
+    label: "🔄 Restart", 
+    action: showStartOptions,
+    secondary: true,
+    icon: "refresh-outline"
+  }
+]);
+      addMessage("🎯 Choose your subject category to find the perfect study materials:");
+    } catch (error) {
+      console.error("Error fetching subjects:", error);
+      addMessage("❌ Sorry, I couldn't load the subjects. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const showStartOptions = () => {
     showTypingIndicator();
     setTimeout(() => {
@@ -73,7 +113,6 @@ export default function Chatbot({ darkMode }) {
       addMessage("👋 Welcome to StudyBot! I'll help you find study materials quickly and easily. Ready to start?");
     }, 1000);
   };
-  // === INSERT ABOVE resetToStart ===
   const showSubjects = (subjectList, type) => {
   addMessage(`📚 Choose a ${type === "theory" ? "theory" : "lab"} subject:`);
   setButtons(
@@ -145,53 +184,7 @@ const navigateToPDF = (subject, examType) => {
 
 
 
-  const resetToStart = async () => {
-    setIsLoading(true);
-    setMessages([]);
-    setButtons([]);
-    setState({ subject: null, examType: null });
 
-    try {
-      const res = await axios.get(`${API_BASE}/subjects`);
-      const theory = Array.isArray(res.data?.theory) ? res.data.theory : [];
-      const labs = Array.isArray(res.data?.labs) ? res.data.labs : [];
-
-     setButtons([
-  { 
-    label: "📚 Theory Subjects", 
-    action: () => showSubjects(theory, "theory"),
-    primary: true,
-    icon: "book-outline"
-  },
-  { 
-    label: "🔬 Lab Subjects", 
-    action: () => showSubjects(labs, "lab"),
-    primary: true,
-    icon: "flask-outline"
-  },
-  { 
-    label: "🔄 Restart", 
-    action: showStartOptions,
-    secondary: true,
-    icon: "refresh-outline"
-  }
-]);
-
-      addMessage("🎯 Choose your subject category to find the perfect study materials:");
-    } catch (err) {
-      console.error("Error loading subjects", err);
-      addMessage("⚠️ Oops! I'm having trouble connecting to the server. Please check your internet connection and try again.");
-      setButtons([
-        { 
-          label: "🔄 Try Again", 
-          action: resetToStart,
-          primary: true
-        }
-      ]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   // Enhanced button rendering with better visual hierarchy
   const renderButtons = () => (

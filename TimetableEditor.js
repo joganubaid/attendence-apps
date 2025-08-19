@@ -60,24 +60,9 @@ export default function TimetableEditor({ subjects = [], timetable = [], setTime
   };
 
   const handleSave = () => {
-    console.log('Saving timetable:', editTable);
     setTimetable(editTable.map(row => [...row]));
-    console.log('Timetable:', timetable);
-    const today = new Date();
-    const dateStr = today.toISOString().slice(0, 10);
-    const todayIdx = getWeekdayIdx(dateStr);
-    console.log(todayIdx);
-    console.log('Today timetable:', timetable, 'todayIdx:', todayIdx);
     goBack();
   };
-
-  useEffect(() => {
-    console.log('Timetable updated:', timetable);
-  }, [timetable]);
-
-  useEffect(() => {
-    console.log('Timetable in App.js:', timetable);
-  }, [timetable]);
 
   return (
     <View style={{ flex: 1, backgroundColor: '#F5F5F5' }}>
