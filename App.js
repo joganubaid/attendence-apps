@@ -13,6 +13,10 @@ import Calendar from './Calendar';
 import Settings from './Settings';
 import Chatbot from './Chatbot/Chatbot';
 import PdfViewer from './Chatbot/PdfViewer';
+import Classroom from './Classroom';
+import JoinClassroom from './JoinClassroom';
+import ClassroomDetail from './ClassroomDetail';
+import ClassBot from './ClassBot';
 
 const initialSubjects = [
   { name: 'Mathematics' },
@@ -44,6 +48,9 @@ function CalendarScreen({ subjects, timetable, attendance, markAttendance, darkM
 
 // ✅ Stack navigator for Chatbot and PdfViewer
 const ChatbotStackNav = createNativeStackNavigator();
+
+// ✅ Stack navigator for Classroom features
+const ClassroomStackNav = createNativeStackNavigator();
 
 export default function App() {
   const [subjects, setSubjects] = useState(initialSubjects);
@@ -90,6 +97,26 @@ export default function App() {
     );
   }
 
+  // Classroom Stack Navigator
+  function ClassroomStack() {
+    return (
+      <ClassroomStackNav.Navigator>
+        <ClassroomStackNav.Screen name="ClassroomHome">
+          {() => <Classroom darkMode={darkMode} />}
+        </ClassroomStackNav.Screen>
+        <ClassroomStackNav.Screen name="JoinClassroom">
+          {() => <JoinClassroom darkMode={darkMode} />}
+        </ClassroomStackNav.Screen>
+        <ClassroomStackNav.Screen name="ClassroomDetail">
+          {({ route }) => <ClassroomDetail darkMode={darkMode} route={route} />}
+        </ClassroomStackNav.Screen>
+        <ClassroomStackNav.Screen name="ClassBot">
+          {({ route }) => <ClassBot darkMode={darkMode} route={route} />}
+        </ClassroomStackNav.Screen>
+      </ClassroomStackNav.Navigator>
+    );
+  }
+
   const Tab = createBottomTabNavigator();
 
   return (
@@ -108,6 +135,7 @@ export default function App() {
               else if (route.name === 'Calendar') iconName = 'calendar-outline';
               else if (route.name === 'Settings') iconName = 'settings';
               else if (route.name === 'Chatbot') iconName = 'chatbubble-ellipses';
+              else if (route.name === 'Classroom') iconName = 'school';
               return <Ionicons name={iconName} size={size} color={color} />;
             },
             tabBarActiveTintColor: '#009688',
@@ -131,6 +159,9 @@ export default function App() {
           </Tab.Screen>
           <Tab.Screen name="Chatbot">
             {() => <ChatbotStack />}
+          </Tab.Screen>
+          <Tab.Screen name="Classroom">
+            {() => <ClassroomStack />}
           </Tab.Screen>
         </Tab.Navigator>
       </NavigationContainer>

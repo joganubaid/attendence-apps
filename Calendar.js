@@ -160,13 +160,13 @@ export default function Calendar({ subjects = [], timetable = [], attendance = {
               const status = attendance[selectedDate]?.[subjectName] || 'not_marked';
               return (
                 <SubjectAttendanceCard
-  key={idx}
-  subject={subject}
-  status={status}
-  onStatusChange={status => markAttendance(selectedDate, subjectName, status)}
-  darkMode={darkMode}
-  styles={styles} // ✅ Add this line
-/>
+                  key={idx}
+                  subject={subject}
+                  status={status}
+                  onStatusChange={status => markAttendance(selectedDate, subjectName, status)}
+                  darkMode={darkMode}
+                  styles={styles}
+                />
 
               );
             })
