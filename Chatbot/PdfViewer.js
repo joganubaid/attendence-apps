@@ -140,6 +140,12 @@ export default function PdfViewer({ route, darkMode }) {
         ) : (
           <WebView
             source={{ uri: googleUrl }}
+            originWhitelist={["https://*"]}
+            mixedContentMode="never"
+            onShouldStartLoadWithRequest={(req) => {
+              const isHttps = req.url?.startsWith('https://');
+              return !!isHttps;
+            }}
             onLoadStart={() => setLoading(true)}
             onLoadEnd={() => setLoading(false)}
             onError={() => setError(true)}

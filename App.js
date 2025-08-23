@@ -5,6 +5,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Provider as PaperProvider } from 'react-native-paper';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import * as FileSystem from 'expo-file-system';
 
 import Dashboard from './Dashboard';
 import Today from './Today';
@@ -59,6 +60,20 @@ export default function App() {
   const [attendance, setAttendance] = useState(initialAttendance);
   const [darkMode, setDarkMode] = useState(false);
 
+  React.useEffect(() => {
+    (async () => {
+      try {
+        const prefFile = FileSystem.documentDirectory + 'ui_prefs.json';
+        const info = await FileSystem.getInfoAsync(prefFile);
+        if (info.exists) {
+          const content = await FileSystem.readAsStringAsync(prefFile);
+          const json = JSON.parse(content || '{}');
+          if (typeof json.darkMode === 'boolean') setDarkMode(json.darkMode);
+        }
+      } catch {}
+    })();
+  }, []);
+
   const addSubject = (subjectName) => {
   setSubjects(prev => [...prev, { name: subjectName }]); // ✅ FIXED
 };
@@ -82,7 +97,14 @@ export default function App() {
     });
   };
 
-  const handleToggleDarkMode = () => setDarkMode(dm => !dm);
+  const handleToggleDarkMode = async () => {
+    setDarkMode(dm => !dm);
+    try {
+      const prefFile = FileSystem.documentDirectory + 'ui_prefs.json';
+      const content = JSON.stringify({ darkMode: !darkMode });
+      await FileSystem.writeAsStringAsync(prefFile, content);
+    } catch {}
+  };
 
   // Move ChatbotStack inside App to access darkMode
   function ChatbotStack() {

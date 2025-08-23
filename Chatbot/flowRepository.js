@@ -75,8 +75,7 @@ export async function getFlow(classroomId, url, forceRefresh = false) {
   }
   try {
     const flow = await fetchFlowFromUrl(url);
-    // Minimal validation
-    if (!flow || !flow.startNodeId || !Array.isArray(flow.nodes)) throw new Error('Malformed flow JSON');
+    if (!validateFlow(flow)) throw new Error('Malformed flow JSON');
     await setCachedFlow(classroomId, flow);
     return { ok: true, flow, fromCache: false };
   } catch (e) {
