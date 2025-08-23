@@ -501,6 +501,14 @@ export default function ClassroomDetail({ darkMode }) {
                 >
                   Open Class Bot
                 </Button>
+                <Button
+                  mode="outlined"
+                  onPress={() => navigation.navigate('ChatbotSettings', { classroom })}
+                  style={[styles.botButton, { marginTop: 8 }]}
+                  icon="cog"
+                >
+                  Chatbot Settings
+                </Button>
               </Card.Content>
             </Card>
           </View>

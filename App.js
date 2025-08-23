@@ -13,6 +13,7 @@ import Calendar from './Calendar';
 import Settings from './Settings';
 import Chatbot from './Chatbot/Chatbot';
 import PdfViewer from './Chatbot/PdfViewer';
+import ChatbotSettings from './Chatbot/ChatbotSettings';
 import Classroom from './Classroom';
 import JoinClassroom from './JoinClassroom';
 import ClassroomDetail from './ClassroomDetail';
@@ -112,6 +113,12 @@ export default function App() {
         </ClassroomStackNav.Screen>
         <ClassroomStackNav.Screen name="ClassBot">
           {({ route }) => <ClassBot darkMode={darkMode} route={route} />}
+        </ClassroomStackNav.Screen>
+        <ClassroomStackNav.Screen name="ChatbotSettings">
+          {({ route }) => <ChatbotSettings darkMode={darkMode} route={route} />}
+        </ClassroomStackNav.Screen>
+        <ClassroomStackNav.Screen name="PdfViewer">
+          {({ route }) => <PdfViewer route={route} darkMode={darkMode} />}
         </ClassroomStackNav.Screen>
       </ClassroomStackNav.Navigator>
     );
