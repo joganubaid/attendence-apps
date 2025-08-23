@@ -89,6 +89,8 @@ export default function ClassBot({ darkMode }) {
           size={24}
           iconColor={darkMode ? '#fff' : '#000'}
           onPress={() => navigation.goBack()}
+          accessibilityLabel="Go back"
+          accessibilityHint="Navigates back to classroom"
         />
         <View style={styles.headerContent}>
           <Text style={[styles.headerTitle, { color: darkMode ? '#fff' : '#000' }]}>Class Bot</Text>
@@ -101,6 +103,8 @@ export default function ClassBot({ darkMode }) {
           size={22}
           iconColor={darkMode ? '#fff' : '#000'}
           onPress={() => loadFlow(true)}
+          accessibilityLabel="Refresh chatbot"
+          accessibilityHint="Fetches latest chatbot flow"
         />
       </View>
 

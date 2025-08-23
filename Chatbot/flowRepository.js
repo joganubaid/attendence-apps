@@ -4,6 +4,7 @@ import * as WebBrowser from 'expo-web-browser';
 
 const SETTINGS_FILE = FileSystem.documentDirectory + 'chatbot_settings.json';
 const FLOW_FILE = (classroomId) => FileSystem.documentDirectory + `chatbot_flow_${classroomId}.json`;
+const DEFAULT_TTL_MS = 6 * 60 * 60 * 1000;
 
 function isValidHttpsUrl(url) {
   if (!url || typeof url !== 'string') return false;
@@ -47,6 +48,18 @@ export async function getCachedFlow(classroomId) {
     const info = await FileSystem.getInfoAsync(FLOW_FILE(classroomId));
     if (!info.exists) return null;
     const content = await FileSystem.readAsStringAsync(FLOW_FILE(classroomId), { encoding: FileSystem.EncodingType.UTF8 });
+    const parsed = JSON.parse(content);
+    return parsed?.flow || parsed; // backwards compatibility
+  } catch {
+    return null;
+  }
+}
+
+async function getCachedFlowWithMeta(classroomId) {
+  try {
+    const info = await FileSystem.getInfoAsync(FLOW_FILE(classroomId));
+    if (!info.exists) return null;
+    const content = await FileSystem.readAsStringAsync(FLOW_FILE(classroomId), { encoding: FileSystem.EncodingType.UTF8 });
     return JSON.parse(content);
   } catch {
     return null;
@@ -54,13 +67,48 @@ export async function getCachedFlow(classroomId) {
 }
 
 export async function setCachedFlow(classroomId, flow) {
-  await FileSystem.writeAsStringAsync(FLOW_FILE(classroomId), JSON.stringify(flow), { encoding: FileSystem.EncodingType.UTF8 });
+  const wrapped = { flow, cachedAt: Date.now(), ttlMs: DEFAULT_TTL_MS };
+  await FileSystem.writeAsStringAsync(FLOW_FILE(classroomId), JSON.stringify(wrapped), { encoding: FileSystem.EncodingType.UTF8 });
 }
 
 async function fetchFlowFromUrl(url) {
   const res = await axios.get(url, { timeout: 15000 });
   if (typeof res.data !== 'object') throw new Error('Invalid JSON response');
   return res.data;
+}
+
+function validateFlow(flow) {
+  if (!flow || typeof flow !== 'object') return false;
+  if (!flow.startNodeId || typeof flow.startNodeId !== 'string') return false;
+  if (!Array.isArray(flow.nodes)) return false;
+  const nodeIds = new Set();
+  for (const node of flow.nodes) {
+    if (!node || typeof node !== 'object') return false;
+    if (typeof node.id !== 'string' || nodeIds.has(node.id)) return false;
+    nodeIds.add(node.id);
+    if (!Array.isArray(node.messages)) return false;
+    for (const m of node.messages) {
+      if (!m || typeof m !== 'object') return false;
+      if (!['text', 'image'].includes(m.type)) return false;
+      if (m.type === 'text' && typeof m.text !== 'string') return false;
+      if (m.type === 'image' && typeof m.imageUrl !== 'string') return false;
+    }
+    if (node.buttons && !Array.isArray(node.buttons)) return false;
+    for (const b of node.buttons || []) {
+      if (!b || typeof b !== 'object' || typeof b.label !== 'string') return false;
+      const a = b.action;
+      if (!a || typeof a !== 'object') return false;
+      if (a.type === 'go_to_node') {
+        if (typeof a.targetNodeId !== 'string') return false;
+      } else if (a.type === 'open_url') {
+        if (typeof a.url !== 'string' || !/^https:\/\//.test(a.url)) return false;
+      } else {
+        return false;
+      }
+    }
+  }
+  if (!nodeIds.has(flow.startNodeId)) return false;
+  return true;
 }
 
 export async function getFlow(classroomId, url, forceRefresh = false) {
@@ -70,8 +118,11 @@ export async function getFlow(classroomId, url, forceRefresh = false) {
     return { ok: false, error: 'Invalid or missing chatbot URL' };
   }
   if (!forceRefresh) {
-    const cached = await getCachedFlow(classroomId);
-    if (cached) return { ok: true, flow: cached, fromCache: true };
+    const cachedWrapped = await getCachedFlowWithMeta(classroomId);
+    if (cachedWrapped?.flow) {
+      const isFresh = typeof cachedWrapped.cachedAt === 'number' && (Date.now() - cachedWrapped.cachedAt) < (cachedWrapped.ttlMs || DEFAULT_TTL_MS);
+      if (isFresh) return { ok: true, flow: cachedWrapped.flow, fromCache: true };
+    }
   }
   try {
     const flow = await fetchFlowFromUrl(url);
