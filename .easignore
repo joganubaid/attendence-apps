@@ -1,0 +1,6 @@
+# .easignore
+node_modules
+.git
+android/build
+ios/build
+assets/large-unused-images
