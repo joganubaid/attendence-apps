@@ -191,6 +191,16 @@ export default function ClassBot({ darkMode }) {
                       <Image source={{ uri: m.imageUrl }} style={{ width: '100%', height: 180, borderRadius: 8 }} />
                     ) : m.type === 'input' ? (
                       <Text style={[styles.botMessageText, { color: darkMode ? '#fff' : '#000' }]}>{m.prompt}</Text>
+                    ) : m.type === 'card' ? (
+                      <TouchableOpacity onPress={() => m.url && WebBrowser.openBrowserAsync(m.url)}>
+                        {m.imageUrl ? (
+                          <Image source={{ uri: m.imageUrl }} style={{ width: '100%', height: 160, borderRadius: 8, marginBottom: 8 }} />
+                        ) : null}
+                        <Text style={[styles.botMessageText, { color: darkMode ? '#fff' : '#000', fontWeight: '600' }]}>{m.title}</Text>
+                        {!!m.subtitle && (
+                          <Text style={[styles.botMessageText, { color: darkMode ? '#aaa' : '#666', marginTop: 4 }]}>{m.subtitle}</Text>
+                        )}
+                      </TouchableOpacity>
                     ) : (
                       <Text style={[styles.botMessageText, { color: darkMode ? '#fff' : '#000' }]}>{m.text}</Text>
                     )}

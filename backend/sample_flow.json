@@ -1,19 +1,19 @@
 {
-	"version": 1,
+	"version": 2,
 	"startNodeId": "welcome",
-	"meta": { "title": "Attendance Bot", "updatedAt": "2025-08-20T00:00:00Z" },
+	"meta": { "title": "Server-Driven Class Bot", "updatedAt": "2025-08-20T00:00:00Z" },
 	"nodes": [
 		{
 			"id": "welcome",
 			"messages": [
-				{ "type": "text", "text": "Welcome to the class assistant!" },
-				{ "type": "image", "imageUrl": "https://placekitten.com/600/200" },
-				{ "type": "text", "text": "What do you want to do?" }
+				{ "type": "text", "text": "👋 Welcome to the server-driven Class Bot!" },
+				{ "type": "card", "title": "Sample Image", "subtitle": "Static asset served by backend", "imageUrl": "{{base}}/assets/image.jpg", "url": "{{base}}/assets/image.jpg" },
+				{ "type": "text", "text": "What would you like to do?" }
 			],
 			"buttons": [
-				{ "label": "Mark Attendance", "action": { "type": "go_to_node", "targetNodeId": "attendance" } },
 				{ "label": "Give Name", "action": { "type": "go_to_node", "targetNodeId": "ask_name" } },
-				{ "label": "Syllabus", "action": { "type": "open_url", "url": "https://example.com/syllabus.pdf" } }
+				{ "label": "View PDF", "action": { "type": "open_url", "url": "{{base}}/assets/sample.pdf" } },
+				{ "label": "Watch Video", "action": { "type": "open_url", "url": "{{base}}/assets/video.mp4" } }
 			]
 		},
 		{
@@ -26,18 +26,38 @@
 		{
 			"id": "greet",
 			"messages": [
-				{ "type": "text", "text": "Thanks! Proceed to attendance or go back." }
+				{ "type": "text", "text": "Hi {{userName}}! Would you like to see the syllabus card?" }
+			],
+			"buttons": [
+				{ "label": "Yes", "action": { "type": "set_var", "varName": "wantsSyllabus", "value": "yes", "nextNodeId": "server_decide" } },
+				{ "label": "No", "action": { "type": "set_var", "varName": "wantsSyllabus", "value": "no", "nextNodeId": "server_decide" } }
+			]
+		},
+		{
+			"id": "server_decide",
+			"messages": [
+				{ "type": "text", "text": "Deciding next step on server..." }
+			],
+			"buttons": [
+				{ "label": "Continue", "action": { "type": "post", "url": "{{base}}/next", "nextNodeId": "attendance" } }
+			]
+		},
+		{
+			"id": "syllabus",
+			"messages": [
+				{ "type": "card", "title": "Syllabus PDF", "subtitle": "Tap to open", "imageUrl": "{{base}}/assets/image.jpg", "url": "{{base}}/assets/sample.pdf", "visibleIf": { "var": "wantsSyllabus", "equals": "yes" } },
+				{ "type": "text", "text": "Return to main menu or go to attendance." }
 			],
 			"buttons": [
 				{ "label": "Attendance", "action": { "type": "go_to_node", "targetNodeId": "attendance" } },
-				{ "label": "Back", "action": { "type": "go_to_node", "targetNodeId": "welcome" } }
+				{ "label": "Home", "action": { "type": "go_to_node", "targetNodeId": "welcome" } }
 			]
 		},
 		{
 			"id": "attendance",
 			"messages": [
 				{ "type": "text", "text": "Attendance is open from 9:00–9:10 AM." },
-				{ "type": "text", "text": "Tap below to proceed." }
+				{ "type": "text", "text": "Tap below to proceed, {{userName}}." }
 			],
 			"buttons": [
 				{ "label": "Open Attendance", "action": { "type": "open_url", "url": "https://example.com/attendance" } },
