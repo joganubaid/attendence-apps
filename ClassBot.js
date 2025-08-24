@@ -18,8 +18,11 @@ export default function ClassBot({ darkMode }) {
   const [error, setError] = useState('');
   const [flow, setFlow] = useState(null);
   const [currentNodeId, setCurrentNodeId] = useState(null);
+  const [nodeStack, setNodeStack] = useState([]); // back stack
   const [uiMessages, setUiMessages] = useState([]);
   const [uiButtons, setUiButtons] = useState([]);
+  const [pendingInput, setPendingInput] = useState('');
+  const [vars, setVars] = useState({});
 
   const styles = getStyles(darkMode);
 
@@ -40,8 +43,9 @@ export default function ClassBot({ darkMode }) {
       }
       const f = result.flow;
       setFlow(f);
-      setCurrentNodeId(f.startNodeId);
-      renderNode(f.startNodeId, f);
+      setVars({});
+      setNodeStack([]);
+      navigateToNode(f.startNodeId, f, { push: false });
     } catch (e) {
       setError('Unexpected error loading flow');
     } finally {
@@ -53,8 +57,7 @@ export default function ClassBot({ darkMode }) {
     if (!action || !flow) return;
     if (action.type === ActionTypes.GO_TO_NODE) {
       if (action.targetNodeId) {
-        setCurrentNodeId(action.targetNodeId);
-        renderNode(action.targetNodeId, flow);
+        navigateToNode(action.targetNodeId, flow, { push: true });
       }
     } else if (action.type === ActionTypes.OPEN_URL) {
       const url = action.url;
@@ -65,6 +68,29 @@ export default function ClassBot({ darkMode }) {
         Alert.alert('Error', 'Unable to open link');
       }
     }
+  };
+
+  const navigateToNode = (nodeId, f, { push }) => {
+    if (push && currentNodeId) setNodeStack(prev => [...prev, currentNodeId]);
+    setCurrentNodeId(nodeId);
+    renderNode(nodeId, f);
+  };
+
+  const goBack = () => {
+    if (nodeStack.length === 0 || !flow) return;
+    const prev = nodeStack[nodeStack.length - 1];
+    setNodeStack(stack => stack.slice(0, -1));
+    setCurrentNodeId(prev);
+    renderNode(prev, flow);
+  };
+
+  const submitInput = (inputDescriptor) => {
+    if (!inputDescriptor || !flow) return;
+    const value = pendingInput.trim();
+    if (!value) return;
+    setVars(prev => ({ ...prev, [inputDescriptor.varName]: value }));
+    setPendingInput('');
+    navigateToNode(inputDescriptor.nextNodeId, flow, { push: true });
   };
 
   const renderNode = (nodeId, f) => {
@@ -80,6 +106,8 @@ export default function ClassBot({ darkMode }) {
       scrollViewRef.current?.scrollToEnd({ animated: true });
     }, 50);
   };
+
+  const inputDescriptor = uiMessages.find(m => m.type === 'input');
 
   return (
     <View style={styles.container}>
@@ -134,6 +162,8 @@ export default function ClassBot({ darkMode }) {
                   <Surface style={[styles.botMessage, { backgroundColor: darkMode ? '#23272f' : '#fff' }]}> 
                     {m.type === 'image' ? (
                       <Image source={{ uri: m.imageUrl }} style={{ width: '100%', height: 180, borderRadius: 8 }} />
+                    ) : m.type === 'input' ? (
+                      <Text style={[styles.botMessageText, { color: darkMode ? '#fff' : '#000' }]}>{m.prompt}</Text>
                     ) : (
                       <Text style={[styles.botMessageText, { color: darkMode ? '#fff' : '#000' }]}>{m.text}</Text>
                     )}
@@ -145,6 +175,16 @@ export default function ClassBot({ darkMode }) {
             {uiButtons.length > 0 && (
               <View style={styles.quickReplyContainer}>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  {nodeStack.length > 0 && (
+                    <Button
+                      mode="outlined"
+                      onPress={goBack}
+                      style={[styles.quickReplyButton, { borderColor: '#009688' }]}
+                      labelStyle={{ color: '#009688' }}
+                    >
+                      Back
+                    </Button>
+                  )}
                   {uiButtons.map((b, idx) => (
                     <Button
                       key={idx}
@@ -161,15 +201,35 @@ export default function ClassBot({ darkMode }) {
             )}
 
             <View style={styles.inputContainer}>
-              <TextInput
-                placeholder="Type a message..."
-                value={''}
-                onChangeText={() => {}}
-                mode="outlined"
-                style={styles.input}
-                editable={false}
-                right={<TextInput.Icon icon="send" disabled />}
-              />
+              {inputDescriptor ? (
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <TextInput
+                    placeholder={inputDescriptor.prompt}
+                    value={pendingInput}
+                    onChangeText={setPendingInput}
+                    mode="outlined"
+                    style={[styles.input, { flex: 1 }]}
+                    accessibilityLabel="Chatbot input"
+                  />
+                  <Button
+                    mode="contained"
+                    onPress={() => submitInput(inputDescriptor)}
+                    style={{ marginLeft: 8, backgroundColor: '#009688' }}
+                  >
+                    Submit
+                  </Button>
+                </View>
+              ) : (
+                <TextInput
+                  placeholder="Type a message..."
+                  value={''}
+                  onChangeText={() => {}}
+                  mode="outlined"
+                  style={styles.input}
+                  editable={false}
+                  right={<TextInput.Icon icon="send" disabled />}
+                />
+              )}
             </View>
           </>
         )}

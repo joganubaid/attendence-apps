@@ -89,9 +89,14 @@ function validateFlow(flow) {
     if (!Array.isArray(node.messages)) return false;
     for (const m of node.messages) {
       if (!m || typeof m !== 'object') return false;
-      if (!['text', 'image'].includes(m.type)) return false;
+      if (!['text', 'image', 'input'].includes(m.type)) return false;
       if (m.type === 'text' && typeof m.text !== 'string') return false;
       if (m.type === 'image' && typeof m.imageUrl !== 'string') return false;
+      if (m.type === 'input') {
+        if (typeof m.prompt !== 'string') return false;
+        if (typeof m.varName !== 'string' || !m.varName.trim()) return false;
+        if (typeof m.nextNodeId !== 'string' || !m.nextNodeId.trim()) return false;
+      }
     }
     if (node.buttons && !Array.isArray(node.buttons)) return false;
     for (const b of node.buttons || []) {
@@ -144,8 +149,10 @@ export function mapNodeToUi(node, onAction) {
   msgs.forEach((m, idx) => {
     if (m.type === 'image' && m.imageUrl) {
       uiMessages.push({ id: `${node.id}-${idx}`, type: 'image', imageUrl: m.imageUrl, text: null });
-    } else if (m.text) {
+    } else if (m.type === 'text' && m.text) {
       uiMessages.push({ id: `${node.id}-${idx}`, type: 'bot', text: m.text });
+    } else if (m.type === 'input') {
+      uiMessages.push({ id: `${node.id}-${idx}`, type: 'input', prompt: m.prompt, varName: m.varName, nextNodeId: m.nextNodeId });
     }
   });
 

@@ -12,7 +12,25 @@
 			],
 			"buttons": [
 				{ "label": "Mark Attendance", "action": { "type": "go_to_node", "targetNodeId": "attendance" } },
+				{ "label": "Give Name", "action": { "type": "go_to_node", "targetNodeId": "ask_name" } },
 				{ "label": "Syllabus", "action": { "type": "open_url", "url": "https://example.com/syllabus.pdf" } }
+			]
+		},
+		{
+			"id": "ask_name",
+			"messages": [
+				{ "type": "input", "prompt": "Enter your name", "varName": "userName", "nextNodeId": "greet" }
+			],
+			"buttons": []
+		},
+		{
+			"id": "greet",
+			"messages": [
+				{ "type": "text", "text": "Thanks! Proceed to attendance or go back." }
+			],
+			"buttons": [
+				{ "label": "Attendance", "action": { "type": "go_to_node", "targetNodeId": "attendance" } },
+				{ "label": "Back", "action": { "type": "go_to_node", "targetNodeId": "welcome" } }
 			]
 		},
 		{
