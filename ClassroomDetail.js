@@ -486,11 +486,11 @@ export default function ClassroomDetail({ darkMode }) {
               <Card.Content>
                 <View style={styles.botHeader}>
                   <Ionicons name="chatbubble-ellipses" size={32} color="#4ECDC4" />
-                  <Text style={[styles.botTitle, { color: darkMode ? '#fff' : '#000' }]}>
+                  <Text style={[styles.botTitle, { color: darkMode ? '#fff' : '#000' }]}> 
                     Class Bot
                   </Text>
                 </View>
-                <Text style={[styles.botDescription, { color: darkMode ? '#aaa' : '#666' }]}>
+                <Text style={[styles.botDescription, { color: darkMode ? '#aaa' : '#666' }]}> 
                   Get instant access to materials and announcements
                 </Text>
                 <Button
@@ -508,6 +508,17 @@ export default function ClassroomDetail({ darkMode }) {
                   icon="cog"
                 >
                   Chatbot Settings
+                </Button>
+                <Button
+                  mode="text"
+                  onPress={async () => {
+                    const { requestNotificationPermissions, scheduleReminderNotification } = await import('./utils/notifications');
+                    await requestNotificationPermissions();
+                    await scheduleReminderNotification('Attendance Reminder', 'Attendance opens at 9:00 AM', 30);
+                  }}
+                  style={[styles.botButton, { marginTop: 8 }]}
+                >
+                  Schedule Reminder (30s)
                 </Button>
               </Card.Content>
             </Card>

@@ -20,6 +20,13 @@ import * as MediaLibrary from "expo-media-library";
 import * as FileSystem from "expo-file-system";
 import * as Sharing from "expo-sharing";
 
+let NativePdf = null;
+try {
+  NativePdf = require('react-native-pdf').default;
+} catch (e) {
+  NativePdf = null;
+}
+
 const { width, height } = Dimensions.get('window');
 
 export default function PdfViewer({ route, darkMode }) {
@@ -34,12 +41,34 @@ export default function PdfViewer({ route, darkMode }) {
   const [error, setError] = useState(false);
   const [showControls, setShowControls] = useState(true);
 
+  const [localUri, setLocalUri] = useState(null);
+  const [useNative, setUseNative] = useState(!!NativePdf);
+
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const progressAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (!status?.granted) requestPermission();
   }, []);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        setLoading(true);
+        const fileName = pdfUrl.split('/').pop() || 'file.pdf';
+        const dest = `${FileSystem.cacheDirectory}${fileName}`;
+        const info = await FileSystem.getInfoAsync(dest);
+        if (!info.exists) {
+          await FileSystem.downloadAsync(pdfUrl, dest);
+        }
+        setLocalUri(dest);
+      } catch (e) {
+        // ignore, fallback to web
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [pdfUrl]);
 
   const hideControls = () => {
     Animated.timing(fadeAnim, {
@@ -118,25 +147,42 @@ export default function PdfViewer({ route, darkMode }) {
         backgroundColor={darkMode ? "#23272f" : "#fff"}
       />
 
-      {/* Header */}
       {showControls && (
-        <Animated.View style={[styles.header, { opacity: fadeAnim }]}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerButton}>
+        <Animated.View style={[styles.header, { opacity: fadeAnim }]}> 
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerButton} accessibilityLabel="Back" accessibilityHint="Go back">
             <Ionicons name="arrow-back" size={24} color={darkMode ? '#80cbc4' : '#009688'} />
           </TouchableOpacity>
-          
-          <TouchableOpacity onPress={downloadPDF} style={styles.headerButton}>
-            <Ionicons name={downloading ? "hourglass" : "download-outline"} size={24} color={darkMode ? '#80cbc4' : '#009688'} />
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row' }}>
+            {NativePdf && (
+              <TouchableOpacity onPress={() => setUseNative(u => !u)} style={styles.headerButton} accessibilityLabel="Toggle renderer" accessibilityHint="Switch between native and web rendering">
+                <Ionicons name={useNative ? "globe-outline" : "document-outline"} size={24} color={darkMode ? '#80cbc4' : '#009688'} />
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity onPress={downloadPDF} style={styles.headerButton} accessibilityLabel="Download PDF">
+              <Ionicons name={downloading ? "hourglass" : "download-outline"} size={24} color={darkMode ? '#80cbc4' : '#009688'} />
+            </TouchableOpacity>
+          </View>
         </Animated.View>
       )}
 
-      {/* WebView */}
       <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={showControlsTemporary}>
         {error ? (
           <View style={styles.center}>
             <Text style={styles.error}>Failed to load PDF.</Text>
           </View>
+        ) : loading && useNative ? (
+          <View style={styles.center}>
+            <ActivityIndicator size="large" color="#009688" />
+            <Text style={{ marginTop: 10, color: darkMode ? "#aaa" : "#666" }}>Preparing PDF...</Text>
+          </View>
+        ) : useNative && NativePdf && localUri ? (
+          <NativePdf
+            source={{ uri: localUri }}
+            onLoadComplete={() => setLoading(false)}
+            onError={() => setError(true)}
+            style={{ flex: 1 }}
+            trustAllCerts={false}
+          />
         ) : (
           <WebView
             source={{ uri: googleUrl }}
@@ -156,7 +202,6 @@ export default function PdfViewer({ route, darkMode }) {
         )}
       </TouchableOpacity>
 
-      {/* Loading & Progress */}
       {loading && (
         <View style={styles.center}>
           <ActivityIndicator size="large" color="#009688" />

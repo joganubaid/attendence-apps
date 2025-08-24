@@ -5,6 +5,7 @@ import * as WebBrowser from 'expo-web-browser';
 const SETTINGS_FILE = FileSystem.documentDirectory + 'chatbot_settings.json';
 const FLOW_FILE = (classroomId) => FileSystem.documentDirectory + `chatbot_flow_${classroomId}.json`;
 const DEFAULT_TTL_MS = 6 * 60 * 60 * 1000;
+const CURRENT_VERSION = 2;
 
 function isValidHttpsUrl(url) {
   if (!url || typeof url !== 'string') return false;
@@ -79,6 +80,7 @@ async function fetchFlowFromUrl(url) {
 
 function validateFlow(flow) {
   if (!flow || typeof flow !== 'object') return false;
+  if (flow.version != null && typeof flow.version !== 'number') return false;
   if (!flow.startNodeId || typeof flow.startNodeId !== 'string') return false;
   if (!Array.isArray(flow.nodes)) return false;
   const nodeIds = new Set();
@@ -116,27 +118,90 @@ function validateFlow(flow) {
   return true;
 }
 
+function normalizeType(str) {
+  return typeof str === 'string' ? str.toLowerCase() : str;
+}
+
+function migrateFlowV1ToV2(flow) {
+  const migrated = { ...flow, version: 2 };
+  migrated.nodes = (flow.nodes || []).map((node) => {
+    const newNode = { ...node };
+    newNode.messages = (node.messages || []).map((m) => {
+      const type = normalizeType(m.type);
+      if (type === 'image') {
+        const imageUrl = m.imageUrl || m.url || m.image || '';
+        return { type: 'image', imageUrl };
+      }
+      if (type === 'input') {
+        return { type: 'input', prompt: String(m.prompt || 'Enter value'), varName: String(m.varName || 'value'), nextNodeId: String(m.nextNodeId || flow.startNodeId) };
+      }
+      return { type: 'text', text: String(m.text || '') };
+    });
+    newNode.buttons = (node.buttons || []).map((b) => {
+      if (b && typeof b.action === 'string') {
+        const raw = b.action.trim();
+        if (raw.startsWith('go_to_node:')) {
+          return { label: b.label, action: { type: 'go_to_node', targetNodeId: raw.split(':')[1] } };
+        }
+        if (raw.startsWith('open_url:')) {
+          return { label: b.label, action: { type: 'open_url', url: raw.substring('open_url:'.length) } };
+        }
+      }
+      const a = b?.action || {};
+      const t = normalizeType(a.type);
+      if (t === 'go_to_node') return { label: b.label, action: { type: 'go_to_node', targetNodeId: a.targetNodeId } };
+      if (t === 'open_url') return { label: b.label, action: { type: 'open_url', url: a.url } };
+      return b;
+    });
+    return newNode;
+  });
+  migrated.meta = migrated.meta || {};
+  return migrated;
+}
+
+function normalizeAndMigrate(flow) {
+  const v = typeof flow.version === 'number' ? flow.version : 1;
+  let out = { ...flow, version: v };
+  if (v < 2) out = migrateFlowV1ToV2(out);
+  // Future migrations: if (out.version < 3) out = migrateFlowV2ToV3(out)
+  return out;
+}
+
 export async function getFlow(classroomId, url, forceRefresh = false) {
   if (!isValidHttpsUrl(url)) {
     const cached = await getCachedFlow(classroomId);
-    if (cached) return { ok: true, flow: cached, fromCache: true };
+    if (cached) {
+      const migrated = normalizeAndMigrate(cached);
+      if (validateFlow(migrated)) {
+        if (migrated !== cached) await setCachedFlow(classroomId, migrated);
+        return { ok: true, flow: migrated, fromCache: true };
+      }
+    }
     return { ok: false, error: 'Invalid or missing chatbot URL' };
   }
   if (!forceRefresh) {
     const cachedWrapped = await getCachedFlowWithMeta(classroomId);
     if (cachedWrapped?.flow) {
       const isFresh = typeof cachedWrapped.cachedAt === 'number' && (Date.now() - cachedWrapped.cachedAt) < (cachedWrapped.ttlMs || DEFAULT_TTL_MS);
-      if (isFresh) return { ok: true, flow: cachedWrapped.flow, fromCache: true };
+      const migrated = normalizeAndMigrate(cachedWrapped.flow);
+      if (validateFlow(migrated)) {
+        if (migrated !== cachedWrapped.flow) await setCachedFlow(classroomId, migrated);
+        if (isFresh) return { ok: true, flow: migrated, fromCache: true };
+      }
     }
   }
   try {
-    const flow = await fetchFlowFromUrl(url);
-    if (!validateFlow(flow)) throw new Error('Malformed flow JSON');
-    await setCachedFlow(classroomId, flow);
-    return { ok: true, flow, fromCache: false };
+    const fetched = await fetchFlowFromUrl(url);
+    const migrated = normalizeAndMigrate(fetched);
+    if (!validateFlow(migrated)) throw new Error('Malformed flow JSON');
+    await setCachedFlow(classroomId, migrated);
+    return { ok: true, flow: migrated, fromCache: false };
   } catch (e) {
     const cached = await getCachedFlow(classroomId);
-    if (cached) return { ok: true, flow: cached, fromCache: true };
+    if (cached) {
+      const migrated = normalizeAndMigrate(cached);
+      if (validateFlow(migrated)) return { ok: true, flow: migrated, fromCache: true };
+    }
     return { ok: false, error: 'Failed to fetch chatbot flow' };
   }
 }

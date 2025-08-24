@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import * as WebBrowser from 'expo-web-browser';
 import { getSettingsUrl, getFlow, mapNodeToUi, ActionTypes } from './Chatbot/flowRepository';
+import { trackEvent } from './Chatbot/analytics';
 
 const { width, height } = Dimensions.get('window');
 
@@ -31,18 +32,21 @@ export default function ClassBot({ darkMode }) {
   }, [classroom.id]);
 
   const loadFlow = async (force) => {
+    trackEvent('chatbot_load_start', { classroomId: classroom.id, force });
     setLoading(true);
     setError('');
     try {
       const url = await getSettingsUrl(classroom.id);
       const result = await getFlow(classroom.id, url, force);
       if (!result.ok) {
+        trackEvent('chatbot_load_error', { classroomId: classroom.id, error: result.error });
         setError(result.error || 'Failed to load flow');
         setLoading(false);
         return;
       }
       const f = result.flow;
       setFlow(f);
+      trackEvent('chatbot_load_success', { classroomId: classroom.id, version: f.version, startNodeId: f.startNodeId });
       setVars({});
       setNodeStack([]);
       navigateToNode(f.startNodeId, f, { push: false });
@@ -55,6 +59,7 @@ export default function ClassBot({ darkMode }) {
 
   const handleAction = async (action) => {
     if (!action || !flow) return;
+    trackEvent('chatbot_button_action', { classroomId: classroom.id, actionType: action.type });
     if (action.type === ActionTypes.GO_TO_NODE) {
       if (action.targetNodeId) {
         navigateToNode(action.targetNodeId, flow, { push: true });
@@ -72,6 +77,7 @@ export default function ClassBot({ darkMode }) {
 
   const navigateToNode = (nodeId, f, { push }) => {
     if (push && currentNodeId) setNodeStack(prev => [...prev, currentNodeId]);
+    trackEvent('chatbot_navigate_node', { classroomId: classroom.id, nodeId });
     setCurrentNodeId(nodeId);
     renderNode(nodeId, f);
   };
