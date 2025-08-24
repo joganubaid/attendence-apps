@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, redirect
+from flask import Flask, jsonify, redirect, request
 from flask_cors import CORS
 import json
 
@@ -14,6 +14,16 @@ def flow():
 	with open('sample_flow.json', 'r') as f:
 		data = json.load(f)
 	return jsonify(data)
+
+@app.post('/next')
+def next_node():
+	payload = request.get_json(silent=True) or {}
+	vars = payload.get('vars') or {}
+	node_id = payload.get('nodeId')
+	# Simple demo logic: if we just asked name and have userName, go to greet; otherwise welcome
+	if vars.get('userName'):
+		return jsonify({ 'nextNodeId': 'greet' })
+	return jsonify({ 'nextNodeId': 'welcome' })
 
 @app.get('/subjects')
 def subjects():

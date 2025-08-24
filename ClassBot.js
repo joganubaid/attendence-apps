@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import * as WebBrowser from 'expo-web-browser';
 import { getSettingsUrl, getFlow, mapNodeToUi, ActionTypes } from './Chatbot/flowRepository';
+import axios from 'axios';
 import { trackEvent } from './Chatbot/analytics';
 
 const { width, height } = Dimensions.get('window');
@@ -72,6 +73,26 @@ export default function ClassBot({ darkMode }) {
       } catch {
         Alert.alert('Error', 'Unable to open link');
       }
+    } else if (action.type === 'set_var') {
+      if (action.varName) {
+        setVars(prev => ({ ...prev, [action.varName]: action.value ?? '' }));
+      }
+      if (action.nextNodeId) navigateToNode(action.nextNodeId, flow, { push: true });
+      else renderNode(currentNodeId, flow);
+    } else if (action.type === 'post') {
+      try {
+        const baseUrl = await getSettingsUrl(classroom.id);
+        const target = action.url && action.url.startsWith('http') ? action.url : `${baseUrl?.replace(/\/flow$/, '')}/next`;
+        const res = await axios.post(target, {
+          vars,
+          nodeId: currentNodeId,
+        }, { timeout: 15000 });
+        const nextNodeId = res?.data?.nextNodeId || action.nextNodeId;
+        if (nextNodeId) navigateToNode(nextNodeId, flow, { push: true });
+        else renderNode(currentNodeId, flow);
+      } catch (e) {
+        Alert.alert('Error', 'Failed to contact server');
+      }
     }
   };
 
@@ -105,7 +126,7 @@ export default function ClassBot({ darkMode }) {
       setError('Flow node not found');
       return;
     }
-    const mapped = mapNodeToUi(node, handleAction);
+    const mapped = mapNodeToUi(node, handleAction, vars);
     setUiMessages(mapped.uiMessages);
     setUiButtons(mapped.buttons);
     setTimeout(() => {

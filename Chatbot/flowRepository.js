@@ -78,6 +78,13 @@ async function fetchFlowFromUrl(url) {
   return res.data;
 }
 
+function validateCondition(cond) {
+  if (!cond || typeof cond !== 'object') return false;
+  if (typeof cond.exists === 'string') return true;
+  if (typeof cond.var === 'string' && (typeof cond.equals === 'string' || typeof cond.not === 'string' || Array.isArray(cond.oneOf))) return true;
+  return false;
+}
+
 function validateFlow(flow) {
   if (!flow || typeof flow !== 'object') return false;
   if (flow.version != null && typeof flow.version !== 'number') return false;
@@ -91,7 +98,8 @@ function validateFlow(flow) {
     if (!Array.isArray(node.messages)) return false;
     for (const m of node.messages) {
       if (!m || typeof m !== 'object') return false;
-      if (!['text', 'image', 'input'].includes(m.type)) return false;
+      if (!['text', 'image', 'input', 'card'].includes(m.type)) return false;
+      if (m.visibleIf && !validateCondition(m.visibleIf)) return false;
       if (m.type === 'text' && typeof m.text !== 'string') return false;
       if (m.type === 'image' && typeof m.imageUrl !== 'string') return false;
       if (m.type === 'input') {
@@ -99,16 +107,29 @@ function validateFlow(flow) {
         if (typeof m.varName !== 'string' || !m.varName.trim()) return false;
         if (typeof m.nextNodeId !== 'string' || !m.nextNodeId.trim()) return false;
       }
+      if (m.type === 'card') {
+        if (typeof m.title !== 'string') return false;
+        if (m.subtitle != null && typeof m.subtitle !== 'string') return false;
+        if (m.imageUrl != null && typeof m.imageUrl !== 'string') return false;
+        if (m.url != null && typeof m.url !== 'string') return false;
+      }
     }
     if (node.buttons && !Array.isArray(node.buttons)) return false;
     for (const b of node.buttons || []) {
       if (!b || typeof b !== 'object' || typeof b.label !== 'string') return false;
+      if (b.visibleIf && !validateCondition(b.visibleIf)) return false;
       const a = b.action;
       if (!a || typeof a !== 'object') return false;
       if (a.type === 'go_to_node') {
         if (typeof a.targetNodeId !== 'string') return false;
       } else if (a.type === 'open_url') {
-        if (typeof a.url !== 'string' || !/^https:\/\//.test(a.url)) return false;
+        if (typeof a.url !== 'string') return false;
+      } else if (a.type === 'set_var') {
+        if (typeof a.varName !== 'string') return false;
+        if (typeof a.value !== 'string') return false;
+      } else if (a.type === 'post') {
+        if (a.url && typeof a.url !== 'string') return false;
+        if (a.nextNodeId && typeof a.nextNodeId !== 'string') return false;
       } else {
         return false;
       }
@@ -135,6 +156,9 @@ function migrateFlowV1ToV2(flow) {
       if (type === 'input') {
         return { type: 'input', prompt: String(m.prompt || 'Enter value'), varName: String(m.varName || 'value'), nextNodeId: String(m.nextNodeId || flow.startNodeId) };
       }
+      if (type === 'card') {
+        return { type: 'card', title: String(m.title || ''), subtitle: m.subtitle ? String(m.subtitle) : undefined, imageUrl: m.imageUrl || undefined, url: m.url || undefined };
+      }
       return { type: 'text', text: String(m.text || '') };
     });
     newNode.buttons = (node.buttons || []).map((b) => {
@@ -151,6 +175,8 @@ function migrateFlowV1ToV2(flow) {
       const t = normalizeType(a.type);
       if (t === 'go_to_node') return { label: b.label, action: { type: 'go_to_node', targetNodeId: a.targetNodeId } };
       if (t === 'open_url') return { label: b.label, action: { type: 'open_url', url: a.url } };
+      if (t === 'set_var') return { label: b.label, action: { type: 'set_var', varName: a.varName, value: String(a.value || '') } };
+      if (t === 'post') return { label: b.label, action: { type: 'post', url: a.url, nextNodeId: a.nextNodeId } };
       return b;
     });
     return newNode;
@@ -163,7 +189,6 @@ function normalizeAndMigrate(flow) {
   const v = typeof flow.version === 'number' ? flow.version : 1;
   let out = { ...flow, version: v };
   if (v < 2) out = migrateFlowV1ToV2(out);
-  // Future migrations: if (out.version < 3) out = migrateFlowV2ToV3(out)
   return out;
 }
 
@@ -206,29 +231,53 @@ export async function getFlow(classroomId, url, forceRefresh = false) {
   }
 }
 
-export function mapNodeToUi(node, onAction) {
+function templateString(str, vars) {
+  if (typeof str !== 'string') return str;
+  return str.replace(/\{\{\s*([a-zA-Z0-9_\.]+)\s*\}\}/g, (_, key) => {
+    const value = vars?.[key];
+    return value != null ? String(value) : '';
+  });
+}
+
+function evalCondition(cond, vars) {
+  if (!cond) return true;
+  if (typeof cond.exists === 'string') return vars?.[cond.exists] != null && vars[cond.exists] !== '';
+  if (typeof cond.var === 'string' && typeof cond.equals === 'string') return String(vars?.[cond.var] ?? '') === cond.equals;
+  if (typeof cond.var === 'string' && typeof cond.not === 'string') return String(vars?.[cond.var] ?? '') !== cond.not;
+  if (typeof cond.var === 'string' && Array.isArray(cond.oneOf)) return cond.oneOf.includes(String(vars?.[cond.var] ?? ''));
+  return true;
+}
+
+export function mapNodeToUi(node, onAction, vars = {}) {
   const uiMessages = [];
   const buttons = [];
 
   const msgs = Array.isArray(node.messages) ? node.messages : [];
   msgs.forEach((m, idx) => {
+    if (m.visibleIf && !evalCondition(m.visibleIf, vars)) return;
     if (m.type === 'image' && m.imageUrl) {
-      uiMessages.push({ id: `${node.id}-${idx}`, type: 'image', imageUrl: m.imageUrl, text: null });
+      uiMessages.push({ id: `${node.id}-${idx}`, type: 'image', imageUrl: templateString(m.imageUrl, vars), text: null });
     } else if (m.type === 'text' && m.text) {
-      uiMessages.push({ id: `${node.id}-${idx}`, type: 'bot', text: m.text });
+      uiMessages.push({ id: `${node.id}-${idx}`, type: 'bot', text: templateString(m.text, vars) });
     } else if (m.type === 'input') {
-      uiMessages.push({ id: `${node.id}-${idx}`, type: 'input', prompt: m.prompt, varName: m.varName, nextNodeId: m.nextNodeId });
+      uiMessages.push({ id: `${node.id}-${idx}`, type: 'input', prompt: templateString(m.prompt, vars), varName: m.varName, nextNodeId: m.nextNodeId });
+    } else if (m.type === 'card') {
+      uiMessages.push({ id: `${node.id}-${idx}`, type: 'card', title: templateString(m.title, vars), subtitle: templateString(m.subtitle, vars), imageUrl: templateString(m.imageUrl, vars), url: templateString(m.url, vars) });
     }
   });
 
   const btns = Array.isArray(node.buttons) ? node.buttons : [];
   btns.forEach((b) => {
     if (!b || !b.label || !b.action) return;
+    if (b.visibleIf && !evalCondition(b.visibleIf, vars)) return;
+    const action = { ...b.action };
+    if (action.url) action.url = templateString(action.url, vars);
+    if (action.targetNodeId) action.targetNodeId = templateString(action.targetNodeId, vars);
     buttons.push({
-      label: String(b.label),
+      label: templateString(String(b.label), vars),
       primary: true,
       icon: undefined,
-      onPress: () => onAction(b.action)
+      onPress: () => onAction(action)
     });
   });
 
