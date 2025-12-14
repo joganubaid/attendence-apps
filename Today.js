@@ -10,6 +10,11 @@ const statusOptions = [
   { key: 'attended', icon: 'check', color: '#4CAF50', label: 'Present' },
   { key: 'half', icon: 'minus', color: '#FF9800', label: 'Half Day' },
   { key: 'not_marked', icon: 'help-circle-outline', color: '#90A4AE', label: 'Not Marked' },
+  { key: 'off', icon: 'close-circle-outline', color: '#BDBDBD' },
+  { key: 'missed', icon: 'close', color: '#F44336' },
+  { key: 'attended', icon: 'check', color: '#4CAF50' },
+  { key: 'half', icon: 'minus', color: '#FF9800' },
+  { key: 'not_marked', icon: 'help-circle-outline', color: '#90A4AE' },
 ];
 
 function getWeekdayIdx(dateStr) {
