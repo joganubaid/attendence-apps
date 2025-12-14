@@ -1,0 +1,25 @@
+{
+  "expo": {
+    "name": "Attendence",
+    "slug": "attendence",
+    "version": "1.0.0",
+    "android": {
+      "package": "com.jogan.attendence",
+      "permissions": [
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "MEDIA_LIBRARY",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
+      ]
+    },
+    "plugins": [
+      "expo-media-library"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "e4f2b456-d7eb-4801-b8f9-b910088ce2ec"
+      }
+    }
+  }
+}
