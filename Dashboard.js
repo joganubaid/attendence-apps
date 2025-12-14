@@ -73,6 +73,8 @@ function SubjectCard({ subject, stats, darkMode, styles, onDelete }) {
             size={20}
             onPress={() => onDelete(subject.name)}
             style={{ marginTop: 4 }}
+            accessibilityLabel={`Delete ${subject.name}`}
+            tooltip="Delete Subject"
           />
         </View>
       </View>

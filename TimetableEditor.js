@@ -123,6 +123,12 @@ export default function TimetableEditor({ subjects = [], timetable = [], setTime
                   title="Free"
                 />
               </Menu>
+              <IconButton
+                icon="delete"
+                onPress={() => handleRemovePeriod(periodIdx)}
+                accessibilityLabel="Remove period"
+                tooltip="Remove period"
+              />
               <IconButton icon="delete" onPress={() => handleRemovePeriod(periodIdx)} />
             </View>
           ))}

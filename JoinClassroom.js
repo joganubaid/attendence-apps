@@ -144,6 +144,8 @@ export default function JoinClassroom({ darkMode }) {
             iconColor="#fff"
             style={styles.scannerButton}
             onPress={() => setShowScanner(false)}
+            accessibilityLabel="Close scanner"
+            tooltip="Close"
           />
         </View>
       </View>
@@ -158,6 +160,8 @@ export default function JoinClassroom({ darkMode }) {
           size={24}
           iconColor={darkMode ? '#fff' : '#000'}
           onPress={() => navigation.goBack()}
+          accessibilityLabel="Go back"
+          tooltip="Go back"
         />
         <Text style={[styles.headerTitle, { color: darkMode ? '#fff' : '#000' }]}>
           Join Classroom

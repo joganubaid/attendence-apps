@@ -30,6 +30,8 @@ function SubjectAttendanceCard({ subject, status, onStatusChange, darkMode, styl
             size={26}
             onPress={() => onStatusChange(option.key)}
             style={{ margin: 4 }}
+            accessibilityLabel={`Mark as ${option.label}`}
+            tooltip={option.label}
           />
         ))}
       </View>

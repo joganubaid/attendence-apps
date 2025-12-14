@@ -5,6 +5,11 @@ import { Text, Card, IconButton } from 'react-native-paper';
 import Calendar from './Calendar';
 
 const statusOptions = [
+  { key: 'off', icon: 'close-circle-outline', color: '#BDBDBD', label: 'Class Cancelled' },
+  { key: 'missed', icon: 'close', color: '#F44336', label: 'Absent' },
+  { key: 'attended', icon: 'check', color: '#4CAF50', label: 'Present' },
+  { key: 'half', icon: 'minus', color: '#FF9800', label: 'Half Day' },
+  { key: 'not_marked', icon: 'help-circle-outline', color: '#90A4AE', label: 'Not Marked' },
   { key: 'off', icon: 'close-circle-outline', color: '#BDBDBD' },
   { key: 'missed', icon: 'close', color: '#F44336' },
   { key: 'attended', icon: 'check', color: '#4CAF50' },
@@ -34,6 +39,8 @@ function SubjectAttendanceCard({ subject, status, onStatusChange, darkMode }) {
               size={24}
               onPress={() => onStatusChange(option.key)}
               style={{ margin: 0 }}
+              accessibilityLabel={option.label}
+              tooltip={option.label}
             />
           ))}
         </View>

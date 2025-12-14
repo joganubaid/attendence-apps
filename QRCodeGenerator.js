@@ -70,6 +70,8 @@ export default function QRCodeGenerator({ classroom, darkMode, visible, onDismis
             size={24}
             iconColor={darkMode ? '#fff' : '#000'}
             onPress={onDismiss}
+            accessibilityLabel="Close"
+            tooltip="Close"
           />
         </View>
 

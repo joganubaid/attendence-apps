@@ -112,6 +112,8 @@ function MaterialCard({ material, onPress, onPin, onDelete, userRole, darkMode }
                   icon="dots-vertical"
                   size={20}
                   iconColor={darkMode ? '#aaa' : '#666'}
+                  accessibilityLabel="Material options"
+                  tooltip="Options"
                 />
               }
             >
@@ -330,6 +332,8 @@ export default function ClassroomDetail({ darkMode }) {
           size={24}
           iconColor={darkMode ? '#fff' : '#000'}
           onPress={() => navigation.goBack()}
+          accessibilityLabel="Go back"
+          tooltip="Go back"
         />
         <View style={styles.headerContent}>
           <Text style={[styles.headerTitle, { color: darkMode ? '#fff' : '#000' }]}>
