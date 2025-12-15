@@ -124,46 +124,6 @@ export default function App() {
 
   const handleToggleDarkMode = () => setDarkMode(dm => !dm);
 
-  // Move ChatbotStack inside App to access darkMode
-  function ChatbotStack() {
-    return (
-      <ChatbotStackNav.Navigator>
-        <ChatbotStackNav.Screen name="ChatbotHome">
-          {() => <Chatbot darkMode={darkMode} />}
-        </ChatbotStackNav.Screen>
-        <ChatbotStackNav.Screen name="PdfViewer">
-          {({ route }) => <PdfViewer route={route} darkMode={darkMode} />}
-        </ChatbotStackNav.Screen>
-      </ChatbotStackNav.Navigator>
-    );
-  }
-
-  // Classroom Stack Navigator
-  function ClassroomStack() {
-    return (
-      <ClassroomStackNav.Navigator>
-        <ClassroomStackNav.Screen name="ClassroomHome">
-          {() => <Classroom darkMode={darkMode} />}
-        </ClassroomStackNav.Screen>
-        <ClassroomStackNav.Screen name="JoinClassroom">
-          {() => <JoinClassroom darkMode={darkMode} />}
-        </ClassroomStackNav.Screen>
-        <ClassroomStackNav.Screen name="ClassroomDetail">
-          {({ route }) => <ClassroomDetail darkMode={darkMode} route={route} />}
-        </ClassroomStackNav.Screen>
-        <ClassroomStackNav.Screen name="ClassBot">
-          {({ route }) => <ClassBot darkMode={darkMode} route={route} />}
-        </ClassroomStackNav.Screen>
-        <ClassroomStackNav.Screen name="ChatbotSettings">
-          {({ route }) => <ChatbotSettings darkMode={darkMode} route={route} />}
-        </ClassroomStackNav.Screen>
-        <ClassroomStackNav.Screen name="PdfViewer">
-          {({ route }) => <PdfViewer route={route} darkMode={darkMode} />}
-        </ClassroomStackNav.Screen>
-      </ClassroomStackNav.Navigator>
-    );
-  }
-
   const Tab = createBottomTabNavigator();
 
   return (
@@ -205,10 +165,6 @@ export default function App() {
             {() => <Settings darkMode={darkMode} onToggleDarkMode={handleToggleDarkMode} />}
           </Tab.Screen>
           <Tab.Screen name="Chatbot">
-            {() => <ChatbotStack />}
-          </Tab.Screen>
-          <Tab.Screen name="Classroom">
-            {() => <ClassroomStack />}
             {() => <ChatbotStack darkMode={darkMode} />}
           </Tab.Screen>
           <Tab.Screen name="Classroom">
