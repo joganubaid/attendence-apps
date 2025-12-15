@@ -220,6 +220,7 @@ export default function JoinClassroom({ darkMode }) {
                   <TextInput.Icon
                     icon="content-paste"
                     onPress={handlePasteFromClipboard}
+                      accessibilityLabel="Paste from clipboard"
                   />
                 }
               />
