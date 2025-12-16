@@ -236,12 +236,16 @@ export default function Classroom({ darkMode }) {
           style={[styles.fab, { backgroundColor: '#009688' }]}
           onPress={() => setModalVisible(true)}
           color="#fff"
+          accessibilityLabel="Create Classroom"
+          tooltip="Create Classroom"
         />
         <FAB
           icon="qr-code"
           style={[styles.fab, styles.joinFab, { backgroundColor: '#4ECDC4' }]}
           onPress={handleJoinClassroom}
           color="#fff"
+          accessibilityLabel="Join Classroom"
+          tooltip="Join Classroom"
         />
       </View>
 

@@ -130,7 +130,14 @@ export default function Dashboard({ subjects = [], attendance = {}, addSubject, 
         })}
       </ScrollView>
 
-      <FAB icon="plus" style={styles.fab} onPress={() => setModalVisible(true)} color="#fff" />
+      <FAB
+        icon="plus"
+        style={styles.fab}
+        onPress={() => setModalVisible(true)}
+        color="#fff"
+        accessibilityLabel="Add Subject"
+        tooltip="Add Subject"
+      />
 
       <Portal>
         <Modal visible={modalVisible} onDismiss={() => setModalVisible(false)} contentContainerStyle={styles.modal}>
