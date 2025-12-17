@@ -526,6 +526,8 @@ export default function ClassroomDetail({ darkMode }) {
           style={[styles.fab, { backgroundColor: '#009688' }]}
           onPress={() => setShowUploadModal(true)}
           color="#fff"
+          accessibilityLabel="Upload Material"
+          tooltip="Upload Material"
         />
       )}
 

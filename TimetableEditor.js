@@ -129,7 +129,6 @@ export default function TimetableEditor({ subjects = [], timetable = [], setTime
                 accessibilityLabel="Remove period"
                 tooltip="Remove period"
               />
-              <IconButton icon="delete" onPress={() => handleRemovePeriod(periodIdx)} />
             </View>
           ))}
           <Button mode="outlined" onPress={handleAddPeriod} style={styles.addPeriodBtn} icon="plus">
