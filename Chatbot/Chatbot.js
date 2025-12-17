@@ -285,7 +285,6 @@ const navigateToPDF = (subject, examType) => {
           accessibilityLabel="Close chatbot"
           accessibilityRole="button"
         >
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.closeButton}>
           <Ionicons name="close" size={24} color={darkMode ? '#80cbc4' : '#009688'} />
         </TouchableOpacity>
       </View>
