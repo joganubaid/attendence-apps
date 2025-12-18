@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { View, ScrollView, StyleSheet, Alert } from 'react-native';
 import {
   Text,
@@ -49,7 +49,7 @@ function calculateStats(subjectName, attendance) {
   return { attended, missed, half, total, percent, canMiss, needAttend };
 }
 
-function SubjectCard({ subject, stats, darkMode, styles, onDelete }) {
+const SubjectCard = React.memo(function SubjectCard({ subject, stats, darkMode, styles, onDelete }) {
   const successColor = '#4CAF50';
   const errorColor = '#F44336';
   const isLow = stats.percent < 75;
@@ -88,13 +88,13 @@ function SubjectCard({ subject, stats, darkMode, styles, onDelete }) {
       </Text>
     </Surface>
   );
-}
+});
 
 export default function Dashboard({ subjects = [], attendance = {}, addSubject, deleteSubject, darkMode }) {
   const [modalVisible, setModalVisible] = useState(false);
   const [subjectName, setSubjectName] = useState('');
 
-  const styles = getStyles(darkMode);
+  const styles = useMemo(() => getStyles(darkMode), [darkMode]);
 
   const handleAdd = () => {
     const trimmed = subjectName.trim();
@@ -105,18 +105,27 @@ export default function Dashboard({ subjects = [], attendance = {}, addSubject, 
     setSubjectName('');
   };
 
-  const handleDelete = (name) => {
+  const handleDelete = useCallback((name) => {
     Alert.alert("Delete Subject", `Are you sure you want to delete "${name}"?`, [
       { text: "Cancel", style: "cancel" },
       { text: "Delete", onPress: () => deleteSubject(name), style: "destructive" }
     ]);
-  };
+  }, [deleteSubject]);
+
+  // Memoize stats calculation to avoid re-calculation on every render
+  const subjectStats = useMemo(() => {
+    const statsMap = {};
+    subjects.forEach(subject => {
+      statsMap[subject.name] = calculateStats(subject.name, attendance);
+    });
+    return statsMap;
+  }, [subjects, attendance]);
 
   return (
     <View style={styles.container}>
       <ScrollView>
         {subjects.map((subject, idx) => {
-          const stats = calculateStats(subject.name, attendance);
+          const stats = subjectStats[subject.name];
           return (
             <SubjectCard
               key={idx}
