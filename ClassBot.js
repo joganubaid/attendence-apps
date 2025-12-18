@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import * as WebBrowser from 'expo-web-browser';
 import { getSettingsUrl, getFlow, mapNodeToUi, ActionTypes } from './Chatbot/flowRepository';
+import { isSafeUrl } from './utils/security';
 
 const { width, height } = Dimensions.get('window');
 
@@ -59,6 +60,12 @@ export default function ClassBot({ darkMode }) {
     } else if (action.type === ActionTypes.OPEN_URL) {
       const url = action.url;
       if (!url) return;
+
+      if (!isSafeUrl(url)) {
+        Alert.alert('Security Warning', 'This link is not safe to open.');
+        return;
+      }
+
       try {
         await WebBrowser.openBrowserAsync(url);
       } catch {
