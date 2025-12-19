@@ -1,19 +1,10 @@
 import axios from 'axios';
 import * as FileSystem from 'expo-file-system';
 import * as WebBrowser from 'expo-web-browser';
+import { isSafeUrl } from '../utils/security';
 
 const SETTINGS_FILE = FileSystem.documentDirectory + 'chatbot_settings.json';
 const FLOW_FILE = (classroomId) => FileSystem.documentDirectory + `chatbot_flow_${classroomId}.json`;
-
-function isValidHttpsUrl(url) {
-  if (!url || typeof url !== 'string') return false;
-  try {
-    const u = new URL(url);
-    return u.protocol === 'https:' && !!u.host;
-  } catch {
-    return false;
-  }
-}
 
 async function ensureFile(path, initial = '{}') {
   const info = await FileSystem.getInfoAsync(path);
@@ -34,7 +25,7 @@ export async function getSettingsUrl(classroomId) {
 }
 
 export async function setSettingsUrl(classroomId, url) {
-  if (!isValidHttpsUrl(url)) throw new Error('Invalid HTTPS URL');
+  if (!isSafeUrl(url, { requireHttps: true })) throw new Error('Invalid HTTPS URL');
   await ensureFile(SETTINGS_FILE);
   const content = await FileSystem.readAsStringAsync(SETTINGS_FILE, { encoding: FileSystem.EncodingType.UTF8 });
   const json = JSON.parse(content || '{}');
@@ -64,7 +55,7 @@ async function fetchFlowFromUrl(url) {
 }
 
 export async function getFlow(classroomId, url, forceRefresh = false) {
-  if (!isValidHttpsUrl(url)) {
+  if (!isSafeUrl(url, { requireHttps: true })) {
     const cached = await getCachedFlow(classroomId);
     if (cached) return { ok: true, flow: cached, fromCache: true };
     return { ok: false, error: 'Invalid or missing chatbot URL' };
