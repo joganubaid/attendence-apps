@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, memo } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -31,21 +31,21 @@ const initialSubjects = [
 const initialTimetable = Array(7).fill().map(() => []);
 const initialAttendance = {};
 
-function SubjectsScreen({ subjects, attendance, addSubject, deleteSubject, darkMode }) {
+const SubjectsScreen = memo(function SubjectsScreen({ subjects, attendance, addSubject, deleteSubject, darkMode }) {
   return <Dashboard subjects={subjects} attendance={attendance} addSubject={addSubject} deleteSubject={deleteSubject} darkMode={darkMode} />;
-}
+});
 
-function TodayScreen({ subjects, timetable, attendance, markAttendance, darkMode }) {
+const TodayScreen = memo(function TodayScreen({ subjects, timetable, attendance, markAttendance, darkMode }) {
   return <Today subjects={subjects} timetable={timetable} attendance={attendance} markAttendance={markAttendance} darkMode={darkMode} />;
-}
+});
 
-function TimetableScreen({ subjects, timetable, setTimetable, darkMode }) {
+const TimetableScreen = memo(function TimetableScreen({ subjects, timetable, setTimetable, darkMode }) {
   return <Timetable subjects={subjects} timetable={timetable} setTimetable={setTimetable} darkMode={darkMode} />;
-}
+});
 
-function CalendarScreen({ subjects, timetable, attendance, markAttendance, darkMode }) {
+const CalendarScreen = memo(function CalendarScreen({ subjects, timetable, attendance, markAttendance, darkMode }) {
   return <Calendar subjects={subjects} timetable={timetable} attendance={attendance} markAttendance={markAttendance} darkMode={darkMode} />;
-}
+});
 
 // ✅ Stack navigator for Chatbot and PdfViewer
 const ChatbotStackNav = createNativeStackNavigator();
@@ -99,30 +99,30 @@ export default function App() {
   const [attendance, setAttendance] = useState(initialAttendance);
   const [darkMode, setDarkMode] = useState(false);
 
-  const addSubject = (subjectName) => {
-  setSubjects(prev => [...prev, { name: subjectName }]); // ✅ FIXED
-};
-  const deleteSubject = (subjectName) => {
-  setSubjects(prev => prev.filter(sub => sub.name !== subjectName));
-  setAttendance(prev => {
-    const updated = { ...prev };
-    for (const date in updated) {
-      delete updated[date][subjectName];
-    }
-    return updated;
-  });
-};
+  const addSubject = useCallback((subjectName) => {
+    setSubjects(prev => [...prev, { name: subjectName }]); // ✅ FIXED
+  }, []);
 
+  const deleteSubject = useCallback((subjectName) => {
+    setSubjects(prev => prev.filter(sub => sub.name !== subjectName));
+    setAttendance(prev => {
+      const updated = { ...prev };
+      for (const date in updated) {
+        delete updated[date][subjectName];
+      }
+      return updated;
+    });
+  }, []);
 
-  const markAttendance = (date, subjectName, status) => {
+  const markAttendance = useCallback((date, subjectName, status) => {
     setAttendance(prev => {
       const day = prev[date] ? { ...prev[date] } : {};
       day[subjectName] = status;
       return { ...prev, [date]: day };
     });
-  };
+  }, []);
 
-  const handleToggleDarkMode = () => setDarkMode(dm => !dm);
+  const handleToggleDarkMode = useCallback(() => setDarkMode(dm => !dm), []);
 
   const Tab = createBottomTabNavigator();
 
